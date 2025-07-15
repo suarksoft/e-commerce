@@ -13,7 +13,7 @@ export default async function FavoritesPage() {
   const customer = await retrieveCustomer()
   
   if (!customer) {
-    redirect("/account/login")
+    redirect("/account")
   }
 
   const favorites = await getFavorites()
