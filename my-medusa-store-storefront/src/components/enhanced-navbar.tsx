@@ -261,6 +261,7 @@ export default function EnhancedNavbar() {
                     )}
                   </Button>
                 </Link>
+                <Link href="/sepet">
                 <Button variant="transparent" size="small" className="relative hover:bg-pink-50 transition-all duration-300 group rounded-full px-4 py-2">
                   <ShoppingBag className="h-5 w-5 group-hover:text-pink-600 transition-colors" />
                   {cartCount > 0 && (
@@ -270,6 +271,7 @@ export default function EnhancedNavbar() {
                   )}
                   <span className="hidden lg:inline ml-2 group-hover:text-pink-600 transition-colors font-medium">Sepet</span>
                 </Button>
+                </Link>
               </div>
             </div>
           </div>
