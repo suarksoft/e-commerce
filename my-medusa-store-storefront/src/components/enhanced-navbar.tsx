@@ -180,7 +180,7 @@ export default function EnhancedNavbar() {
               {/* Logo */}
               <Link href="/" className="flex items-center space-x-3 group">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-400 group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-xl">
-                  <span className="text-xl font-bold text-white">ME</span>
+                  <span className="text-xl font-bold text-white">🤭</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="hidden text-xl font-bold text-gray-900 sm:block group-hover:text-pink-600 transition-colors">
@@ -246,10 +246,12 @@ export default function EnhancedNavbar() {
 
               {/* Right Actions */}
               <div className="flex items-center space-x-3">
+                <Link href="/account">
                 <Button variant="transparent" size="small" className="hidden sm:flex hover:bg-pink-50 transition-all duration-300 group rounded-full px-4 py-2">
                   <User className="h-5 w-5 mr-2 group-hover:text-pink-600 transition-colors" />
                   <span className="hidden lg:inline group-hover:text-pink-600 transition-colors font-medium">Giriş</span>
                 </Button>
+                </Link>
                 <Link href="/favorites">
                   <Button variant="transparent" size="small" className="relative hover:bg-pink-50 transition-all duration-300 group rounded-full px-4 py-2">
                     <Heart className="h-5 w-5 group-hover:text-pink-600 transition-colors" />
