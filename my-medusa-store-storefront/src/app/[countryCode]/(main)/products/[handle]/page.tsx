@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { listProducts } from "@lib/data/products"
+import { listProducts, getProductByHandle } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
 
@@ -21,7 +21,7 @@ export async function generateStaticParams() {
     const promises = countryCodes.map(async (country) => {
       const { response } = await listProducts({
         countryCode: country,
-        queryParams: { limit: 100, fields: "handle" },
+        queryParams: { limit: 100 },
       })
 
       return {
@@ -59,20 +59,17 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
-  const product = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: { handle },
-  }).then(({ response }) => response.products[0])
+  const product = await getProductByHandle(handle, params.countryCode)
 
   if (!product) {
     notFound()
   }
 
   return {
-    title: `${product.title} | Medusa Store`,
+    title: `${product.title} | Moda Es Es`,
     description: `${product.title}`,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
+      title: `${product.title} | Moda Es Es`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
@@ -81,16 +78,14 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function ProductPage(props: Props) {
   const params = await props.params
+  const { handle } = params
   const region = await getRegion(params.countryCode)
 
   if (!region) {
     notFound()
   }
 
-  const pricedProduct = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: { handle: params.handle },
-  }).then(({ response }) => response.products[0])
+  const pricedProduct = await getProductByHandle(handle, params.countryCode)
 
   if (!pricedProduct) {
     notFound()

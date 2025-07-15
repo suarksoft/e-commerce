@@ -7,6 +7,7 @@ import { getRegion } from "@lib/data/regions"
 import AnnouncementBanner from "components/announcement-banner"
 import SaleProductsCarousel from "components/sale-products-carousel"
 import RegularProductsGrid from "components/regular-products-grid"
+import FeaturedCategories from "components/featured-categories"
 
 export const metadata: Metadata = {
   title: "Moda Es Es",
@@ -33,8 +34,10 @@ export default async function Home(props: {
 
   return (
     <>
-      <AnnouncementBanner/>
+      <AnnouncementBanner />
+      <FeaturedCategories />
       <Hero />
+    
       <SaleProductsCarousel/>
       <RegularProductsGrid/>
       <div className="py-12">

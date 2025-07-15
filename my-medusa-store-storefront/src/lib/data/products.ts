@@ -84,6 +84,46 @@ export const listProducts = async ({
     })
 }
 
+// Handle ile ürün arama fonksiyonu
+export const getProductByHandle = async (handle: string, countryCode: string) => {
+  const region = await getRegion(countryCode)
+
+  if (!region) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  const next = {
+    ...(await getCacheOptions("products")),
+  }
+
+  try {
+    const { products } = await sdk.client
+      .fetch<{ products: HttpTypes.StoreProduct[] }>(
+        `/store/products`,
+        {
+          method: "GET",
+          query: {
+            handle,
+            region_id: region.id,
+            fields: "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags",
+          },
+          headers,
+          next,
+          cache: "no-store",
+        }
+      )
+
+    return products[0] || null
+  } catch (error) {
+    console.error("Ürün bulunamadı:", error)
+    return null
+  }
+}
+
 /**
  * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
  * It will then return the paginated products based on the page and limit parameters.
