@@ -307,16 +307,37 @@ export default function EnhancedNavbar() {
                     onMouseEnter={() => setActiveCategory(category.name)}
                     onMouseLeave={() => setActiveCategory(null)}
                   >
-                    {category.subcategories.map((sub, index) => (
+                  {category.subcategories.map((sub, index) => {
+                    // URL'yi temizle - adım adım
+                    let cleanUrl = sub.toLowerCase()  // küçük harf yap
+                    
+                    // Özel karakterleri değiştir
+                    if (cleanUrl.includes("%50'ye varan")) {
+                      cleanUrl = "50ye-varan"
+                    } else if (cleanUrl.includes("son fırsat")) {
+                      cleanUrl = "son-firsat"
+                    } else if (cleanUrl.includes("i̇ndirimli")) {
+                      cleanUrl = "indirimli"
+                    } else {
+                      // Genel temizlik
+                      cleanUrl = cleanUrl
+                        .replace(/[^a-z0-9\s]/g, "")  // özel karakterleri kaldır
+                        .replace(/\s+/g, "-")         // boşlukları tire yap
+                        .replace(/-+/g, "-")          // çoklu tireleri tek tire yap
+                        .replace(/^-|-$/g, "")        // başta/sonda tire varsa kaldır
+                    }
+                    
+                    return (
                       <Link
                         key={index}
-                        href={`${category.href}/${sub.toLowerCase().replace(" ", "-")}`}
+                        href={`${category.href}/${cleanUrl}`}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                         onClick={() => setActiveCategory(null)}
                       >
                         {sub}
                       </Link>
-                    ))}
+                    )
+                  })}
                   </div>
                 )}
               </div>
