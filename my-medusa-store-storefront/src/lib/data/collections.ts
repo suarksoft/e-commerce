@@ -45,16 +45,37 @@ export const listCollections = async (
 
 export const getCollectionByHandle = async (
   handle: string
-): Promise<HttpTypes.StoreCollection> => {
+): Promise<HttpTypes.StoreCollection | null> => {
   const next = {
     ...(await getCacheOptions("collections")),
   }
 
-  return sdk.client
+  const result = await sdk.client
     .fetch<HttpTypes.StoreCollectionListResponse>(`/store/collections`, {
       query: { handle, fields: "*products" },
       next,
       cache: "force-cache",
     })
     .then(({ collections }) => collections[0])
+    
+  return result || null
+}
+
+export const getCollectionByName = async (
+  name: string
+): Promise<HttpTypes.StoreCollection | null> => {
+  const next = {
+    ...(await getCacheOptions("collections")),
+  }
+
+  // Tüm collection'ları getir
+  const { collections } = await listCollections({ limit: "100" })
+  
+  // İsme göre filtrele
+  const found = collections.find(collection => 
+    collection.title?.toLowerCase() === name.toLowerCase() ||
+    collection.handle?.toLowerCase() === name.toLowerCase()
+  )
+  
+  return found || null
 }

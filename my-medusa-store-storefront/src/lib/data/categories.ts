@@ -47,3 +47,30 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
     )
     .then(({ product_categories }) => product_categories[0])
 }
+
+export const getCategoryByName = async (categoryName: string) => {
+  const next = {
+    ...(await getCacheOptions("categories")),
+  }
+
+  // Önce tüm kategorileri getir
+  const allCategories = await sdk.client
+    .fetch<HttpTypes.StoreProductCategoryListResponse>(
+      `/store/product-categories`,
+      {
+        query: {
+          fields: "*category_children, *products",
+          limit: 100,
+        },
+        next,
+        cache: "force-cache",
+      }
+    )
+    .then(({ product_categories }) => product_categories)
+
+  // Kategori adına göre filtrele
+  return allCategories.find(category => 
+    category.name?.toLowerCase() === categoryName.toLowerCase() ||
+    category.handle?.toLowerCase() === categoryName.toLowerCase()
+  )
+}
