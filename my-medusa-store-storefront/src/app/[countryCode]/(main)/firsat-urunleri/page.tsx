@@ -17,18 +17,25 @@ const page = () => {
 
   useEffect(() => {
     // Medusa backend'den fırsat ürünlerini çek
-    fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=20&category_id=firsat-urunleri`, {
+    // Önce handle ile kategori ID'sini bul
+    fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri` , {
       headers: {
         "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
       },
     })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("API yanıtı:", data)
-        if (data.products && Array.isArray(data.products)) {
-          setProducts(data.products)
+      .then(res => res.json())
+      .then(data => {
+        // Medusa v2'de "product_category", v1'de "product_categories"
+        const kategori = data.product_category || data.product_categories?.[0]
+        if (kategori && kategori.id) {
+          // Kategori ID ile ürünleri çek
+          return fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=20&category_id=${kategori.id}`, {
+            headers: {
+              "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+            },
+          })
         } else {
-          // Eğer kategoriye özel ürün yoksa, genel ürünleri çek
+          // Kategori yoksa genel ürünleri çek
           return fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=20`, {
             headers: {
               "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
@@ -36,15 +43,18 @@ const page = () => {
           })
         }
       })
-      .then((res) => res?.json())
-      .then((data) => {
-        if (data?.products && Array.isArray(data.products)) {
+      .then(res => res.json())
+      .then(data => {
+        if (data.products && Array.isArray(data.products)) {
           setProducts(data.products)
+        } else {
+          setProducts([])
         }
         setLoading(false)
       })
       .catch((error) => {
         console.error("API hatası:", error)
+        setProducts([])
         setLoading(false)
       })
   }, [])
