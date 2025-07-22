@@ -2,61 +2,60 @@
 import React, { useState, useEffect } from 'react'
 import { Clock, Star, Heart, ShoppingCart, Flame, Tag } from 'lucide-react'
 import Link from 'next/link'
+import axios from "axios"
 
 type Product = {
   id: string;
   title: string;
   thumbnail?: string;
   categories?: { name: string }[];
-  variants?: { prices?: { amount: number }[] }[];
+  variants?: { prices?: { amount: number }[]; metadata?: { [key: string]: any } }[];
+  metadata?: { [key: string]: any };
 };
+
+
+
 
 const page = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
+
+
+  // Medusa'dan fırsat ürünlerini çeken fonksiyon (Custom API kullanarak)
+const getFirsatUrunleri = async (limit = 20) => {
+  try {
+    // Artık doğrudan custom store/products API'mizi kullanıyoruz
+    // Bu API metadata'yı otomatik olarak döndürüyor
+    const productsRes = await axios.get(
+      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=${limit}`,
+      {
+        headers: {
+          "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+        },
+      }
+    );
+
+    const parsedProducts = (productsRes.data.products || []).map((product: Product) => {
+      const metadata = product.metadata || {};
+      console.log("Ürün:", product.title, "Metadata:", product.metadata);
+      return { ...product, metadata };
+    });
+
+    return parsedProducts;
+  } catch (error) {
+    console.error("API hatası:", error);
+    return [];
+  }
+};
+
+
   useEffect(() => {
-    // Medusa backend'den fırsat ürünlerini çek
-    // Önce handle ile kategori ID'sini bul
-    fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri` , {
-      headers: {
-        "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-      },
+    getFirsatUrunleri().then(products => {
+      console.log("Fırsat ürünleri:", products)
+      setProducts(products)
+      setLoading(false)
     })
-      .then(res => res.json())
-      .then(data => {
-        // Medusa v2'de "product_category", v1'de "product_categories"
-        const kategori = data.product_category || data.product_categories?.[0]
-        if (kategori && kategori.id) {
-          // Kategori ID ile ürünleri çek
-          return fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=20&category_id=${kategori.id}`, {
-            headers: {
-              "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-            },
-          })
-        } else {
-          // Kategori yoksa genel ürünleri çek
-          return fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=20`, {
-            headers: {
-              "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-            },
-          })
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.products && Array.isArray(data.products)) {
-          setProducts(data.products)
-        } else {
-          setProducts([])
-        }
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error("API hatası:", error)
-        setProducts([])
-        setLoading(false)
-      })
   }, [])
 
   const subKategoriler = [
@@ -143,11 +142,23 @@ const page = () => {
                 />
                 
                 {/* İndirim Badge */}
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 space-y-2">
                   <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1 shadow-lg">
                     <Tag className="h-3 w-3" />
-                    <span>%50</span>
+                    <span>
+                      %{product.metadata?.discount ??
+                        product.variants?.[0]?.metadata?.discount ?? 0}
+                    </span>
                   </div>
+                  
+                  {/* Son Fırsat Badge */}
+                  {(product.metadata?.isLastChance === "True" || 
+                    product.variants?.[0]?.metadata?.isLastChance === "True") && (
+                    <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg animate-pulse">
+                      <Flame className="h-3 w-3" />
+                      <span>SON FIRSAT</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Favori Butonu */}
@@ -160,7 +171,22 @@ const page = () => {
                   <div className="bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg text-center">
                     <div className="flex items-center justify-center space-x-1 text-sm">
                       <Clock className="h-3 w-3" />
-                      <span>{Math.floor(Math.random() * 5) + 1} gün</span>
+                      {product.metadata?.discount_end ||
+                      product.variants?.[0]?.metadata?.discount_end ? (
+                        <span>
+                          Son gün: {
+                            (() => {
+                              const tarih =
+                                product.metadata?.discount_end ||
+                                product.variants?.[0]?.metadata?.discount_end;
+                              const dateObj = !isNaN(Date.parse(tarih))
+                                ? new Date(tarih)
+                                : new Date(tarih.replace(/-/g, '/'));
+                              return dateObj.toLocaleDateString("tr-TR");
+                            })()
+                          }
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>
