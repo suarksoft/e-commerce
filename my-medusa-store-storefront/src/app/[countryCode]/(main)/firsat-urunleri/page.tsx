@@ -8,7 +8,7 @@ type Product = {
   id: string;
   title: string;
   thumbnail?: string;
-  categories?: { name: string }[];
+  categories?: { id: string; name: string }[]; // id eklendi!
   variants?: { prices?: { amount: number }[]; metadata?: { [key: string]: any } }[];
   metadata?: { [key: string]: any };
 };
@@ -22,33 +22,55 @@ const page = () => {
 
 
 
-  // Medusa'dan fırsat ürünlerini çeken fonksiyon (Custom API kullanarak)
-const getFirsatUrunleri = async (limit = 20) => {
-  try {
-    // Artık doğrudan custom store/products API'mizi kullanıyoruz
-    // Bu API metadata'yı otomatik olarak döndürüyor
-    const productsRes = await axios.get(
-      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=${limit}`,
-      {
+  const getFirsatUrunleri = async (limit = 20) => {
+    try {
+      // 1. Kategori ID'sini al
+      const categoryRes = await axios.get(
+        `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri`,
+        {
+          headers: {
+            "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+          },
+        }
+      );
+
+      const categoryId = categoryRes.data.product_categories?.[0]?.id;
+      
+      // DEBUG: Alınan kategori ID'sini konsola yazdır
+      console.log("Alınan Kategori ID:", categoryId);
+
+      if (!categoryId) {
+        console.error("Fırsat ürünleri kategorisi bulunamadı");
+        return [];
+      }
+
+      // DEBUG: Ürünleri çekmek için oluşturulan tam URL'yi konsola yazdır
+      const requestUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?category_id[]=${categoryId}&limit=${limit}`;
+      console.log("API İstek URL:", requestUrl);
+
+      // 2. Sadece bu kategoriye ait ürünleri çek
+      const productsRes = await axios.get(requestUrl, {
         headers: {
           "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
         },
-      }
-    );
+      });
+      
+      // DEBUG: API'den gelen ürün sayısını kontrol et
+      console.log("Gelen ürün sayısı:", productsRes.data.products.length);
 
-    const parsedProducts = (productsRes.data.products || []).map((product: Product) => {
-      const metadata = product.metadata || {};
-      console.log("Ürün:", product.title, "Metadata:", product.metadata);
-      return { ...product, metadata };
-    });
 
-    return parsedProducts;
-  } catch (error) {
-    console.error("API hatası:", error);
-    return [];
-  }
-};
+      // Gelen ürünleri döndür
+      const parsedProducts = (productsRes.data.products || []).map((product: Product) => {
+        const metadata = product.metadata || {};
+        return { ...product, metadata };
+      });
 
+      return parsedProducts;
+    } catch (error) {
+      console.error("API hatası:", error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     getFirsatUrunleri().then(products => {
