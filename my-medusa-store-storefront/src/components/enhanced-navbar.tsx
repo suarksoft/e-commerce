@@ -179,9 +179,13 @@ export default function EnhancedNavbar() {
 
               {/* Logo */}
               <Link href="/" className="flex items-center space-x-3 group">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-400 group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-xl">
-                  <span className="text-xl font-bold text-white">🤭</span>
-                </div>
+                <img
+                  src="/moda_es_es_logo.jpg"
+                  alt="Moda Es Es Logo"
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover shadow-lg group-hover:scale-110 transition-all duration-300 group-hover:shadow-xl"
+                />
                 <div className="flex flex-col">
                   <span className="hidden text-xl font-bold text-gray-900 sm:block group-hover:text-pink-600 transition-colors">
                     Moda Es Es

@@ -7,13 +7,13 @@ import ProductPreview from "@modules/products/components/product-preview"
 import { Pagination } from "@modules/store/components/pagination"
 
 export const metadata: Metadata = {
-  title: "Elbise | Moda Es Es",
-  description: "En şık elbiselerimizi keşfedin",
+  title: "Etek | Moda Es Es",
+  description: "En şık etek modellerimizi keşfedin",
 }
 
 const PRODUCT_LIMIT = 12
 
-export default async function ElbisePage({
+export default async function EtekPage({
   params,
   searchParams,
 }: {
@@ -30,28 +30,23 @@ export default async function ElbisePage({
     notFound()
   }
 
-  // Önce handle ile dene, sonra name ile
-  let category: import("@medusajs/types").HttpTypes.StoreProductCategory | undefined = await getCategoryByHandle(["elbise"])
+  let category: import("@medusajs/types").HttpTypes.StoreProductCategory | undefined = await getCategoryByHandle(["etek"])
   
   if (!category) {
-    category = await getCategoryByName("elbise")
+    category = await getCategoryByName("etek")
   }
-
-  // Debug için kategori bilgilerini yazdır
-  console.log("Kategori bulundu:", category?.name, category?.handle, category?.id)
 
   if (!category) {
     return (
       <div className="content-container py-6">
         <div className="mb-8 text-2xl-semi">
-          <h1>Elbise</h1>
+          <h1>Etek</h1>
         </div>
-        <p>Henüz elbise ürünü bulunmamaktadır.</p>
+        <p>Henüz etek ürünü bulunmamaktadır.</p>
       </div>
     )
   }
 
-  // Buradan sonra category kesinlikle tanımlı
   const categoryId = (category as import("@medusajs/types").HttpTypes.StoreProductCategory).id
 
   const {
@@ -70,9 +65,9 @@ export default async function ElbisePage({
   return (
     <div className="content-container py-6">
       <div className="mb-8 text-2xl-semi">
-        <h1>Elbise</h1>
+        <h1>Etek</h1>
         <p className="text-sm text-gray-600 mt-2">
-          En şık elbiselerimizi keşfedin
+          En şık etek modellerimizi keşfedin
         </p>
       </div>
       
@@ -95,9 +90,9 @@ export default async function ElbisePage({
         </>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500">Bu kategoride henüz elbise ürünü bulunmamaktadır.</p>
+          <p className="text-gray-500">Bu kategoride henüz etek ürünü bulunmamaktadır.</p>
         </div>
       )}
     </div>
   )
-}
+} 
