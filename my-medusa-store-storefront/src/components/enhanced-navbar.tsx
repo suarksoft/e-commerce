@@ -279,46 +279,72 @@ export default function EnhancedNavbar() {
           </div>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="border-b border-gray-100 bg-white shadow-sm">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-14 items-center justify-center space-x-10 overflow-x-auto scrollbar-hide">
-              {categories.map((category) => (
-                <div
-                  key={category.name}
-                  className="relative group"
-                  onMouseEnter={() => setActiveCategory(category.name)}
-                  onMouseLeave={() => setActiveCategory(null)}
+      {/* Navigation Menu */}
+      <nav className="border-b border-gray-100 bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 items-center justify-center space-x-10">
+            {categories.map((category) => (
+              <div
+                key={category.name}
+                className="relative group"
+                onMouseEnter={() => setActiveCategory(category.name)}
+                onMouseLeave={() => setActiveCategory(null)}
+              >
+                <Link
+                  href={category.href}
+                  className={`whitespace-nowrap text-sm font-semibold transition-all duration-300 hover:text-pink-600 flex items-center space-x-2 py-4 px-2 rounded-lg hover:bg-pink-50 ${
+                    category.featured ? "text-pink-600 border-b-2 border-pink-600" : "text-gray-700"
+                  }`}
                 >
-                  <Link
-                    href={category.href}
-                    className={`whitespace-nowrap text-sm font-semibold transition-all duration-300 hover:text-pink-600 flex items-center space-x-2 py-4 px-2 rounded-lg hover:bg-pink-50 ${
-                      category.featured ? "text-pink-600 border-b-2 border-pink-600" : "text-gray-700"
-                    }`}
-                  >
-                    <span>{category.name}</span>
-                    {category.subcategories && <ChevronDown className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300" />}
-                  </Link>
+                  <span>{category.name}</span>
+                  {category.subcategories && <ChevronDown className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300" />}
+                </Link>
 
-                  {/* Dropdown Menu */}
-                  {activeCategory === category.name && category.subcategories && (
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 animate-in slide-in-from-top-2 duration-200">
-                      {category.subcategories.map((sub, index) => (
-                        <Link
-                          key={index}
-                          href={`${category.href}/${sub.toLowerCase().replace(" ", "-")}`}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
-                        >
-                          {sub}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                {/* Dropdown Menu */}
+                {activeCategory === category.name && category.subcategories && (
+                  <div 
+                    className="absolute top-full left-1/2 -ml-24 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 animate-in slide-in-from-top-2 duration-200"
+                    onMouseEnter={() => setActiveCategory(category.name)}
+                    onMouseLeave={() => setActiveCategory(null)}
+                  >
+                  {category.subcategories.map((sub, index) => {
+                    // URL'yi temizle - adım adım
+                    let cleanUrl = sub.toLowerCase()  // küçük harf yap
+                    
+                    // Özel karakterleri değiştir
+                    if (cleanUrl.includes("%50'ye varan")) {
+                      cleanUrl = "50ye-varan"
+                    } else if (cleanUrl.includes("son fırsat")) {
+                      cleanUrl = "son-firsat"
+                    } else if (cleanUrl.includes("i̇ndirimli")) {
+                      cleanUrl = "indirimli"
+                    } else {
+                      // Genel temizlik
+                      cleanUrl = cleanUrl
+                        .replace(/[^a-z0-9\s]/g, "")  // özel karakterleri kaldır
+                        .replace(/\s+/g, "-")         // boşlukları tire yap
+                        .replace(/-+/g, "-")          // çoklu tireleri tek tire yap
+                        .replace(/^-|-$/g, "")        // başta/sonda tire varsa kaldır
+                    }
+                    
+                    return (
+                      <Link
+                        key={index}
+                        href={`${category.href}/${cleanUrl}`}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                        onClick={() => setActiveCategory(null)}
+                      >
+                        {sub}
+                      </Link>
+                    )
+                  })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </nav>
+        </div>
+      </nav>
 
 
       </header>
