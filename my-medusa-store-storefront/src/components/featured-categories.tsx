@@ -66,7 +66,7 @@ export default function FeaturedCategories() {
                   </div>
                 </div>
                 {category.badge && (
-                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-lg">
+                  <span className="absolute top-0 right-0 bg-gradient-to-r from-pink-500 to-orange-400 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse shadow-lg transform translate-x-1/2 z-10">
                     {category.badge}
                   </span>
                 )}

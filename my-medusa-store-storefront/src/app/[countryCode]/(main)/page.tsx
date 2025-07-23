@@ -8,6 +8,8 @@ import AnnouncementBanner from "components/announcement-banner"
 import SaleProductsCarousel from "components/sale-products-carousel"
 import RegularProductsGrid from "components/regular-products-grid"
 import FeaturedCategories from "components/featured-categories"
+import HeroBanner from "components/HeroBanner"
+import NewsletterCTA from "components/NewsletterCTA"
 
 export const metadata: Metadata = {
   title: "Moda Es Es",
@@ -36,10 +38,10 @@ export default async function Home(props: {
     <>
       <AnnouncementBanner />
       <FeaturedCategories />
-      <Hero />
-    
+      <HeroBanner />
       <SaleProductsCarousel/>
       <RegularProductsGrid/>
+      <NewsletterCTA />
       <div className="py-12">
         <ul className="flex flex-col gap-x-6">
           <FeaturedProducts collections={collections} region={region} />
