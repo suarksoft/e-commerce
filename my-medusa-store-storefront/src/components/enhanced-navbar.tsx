@@ -191,7 +191,7 @@ export default function EnhancedNavbar() {
                     Moda Es Es
                   </span>
                   <span className="hidden text-xs text-gray-500 sm:block group-hover:text-pink-400 transition-colors">
-                    Fashion Store
+                    Modanın Kalbi
                   </span>
                 </div>
               </Link>
