@@ -44,7 +44,7 @@ const AddressSelect = ({
               <span className="block truncate">
                 {selectedAddress
                   ? selectedAddress.address_1
-                  : "Choose an address"}
+                  : "Adres seçin"}
               </span>
               <ChevronUpDown
                 className={clx("transition-rotate duration-200", {
@@ -52,7 +52,7 @@ const AddressSelect = ({
                 })}
               />
             </>
-          )}
+          )}    
         </Listbox.Button>
         <Transition
           as={Fragment}
