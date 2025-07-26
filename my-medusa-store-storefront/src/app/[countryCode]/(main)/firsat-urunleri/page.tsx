@@ -129,13 +129,26 @@ const Page = async () => {
                 
                 {/* İndirim Badge */}
                 <div className="absolute top-3 left-3 space-y-2">
-                  <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1 shadow-lg">
-                    <Tag className="h-3 w-3" />
-                    <span>
-                      %{product.metadata?.discount ??
-                        product.variants?.[0]?.metadata?.discount ?? 0}
-                    </span>
-                  </div>
+                  {(() => {
+                    const variant = product.variants?.[0];
+                    if (!variant || !variant.prices || variant.prices.length < 2) return null;
+                    const sorted = [...variant.prices].sort((a, b) => b.amount - a.amount);
+                    const eskiFiyat = sorted[0].amount;
+                    const yeniFiyat = sorted[sorted.length - 1].amount;
+                    let indirimYuzdesi = 0;
+                    if (eskiFiyat > yeniFiyat) {
+                      indirimYuzdesi = Math.round(((eskiFiyat - yeniFiyat) / eskiFiyat) * 100);
+                    }
+                    if (indirimYuzdesi > 0) {
+                      return (
+                        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1 shadow-lg">
+                          <Tag className="h-3 w-3" />
+                          <span>%{indirimYuzdesi}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   
                   {/* Son Fırsat Badge */}
                   {(product.metadata?.isLastChance === "True" || 
@@ -202,22 +215,42 @@ const Page = async () => {
                   <span className="text-sm text-gray-500">(128)</span>
                 </div>
 
-                {/* Fiyat */}
+                {/* Fiyat ve İndirim */}
                 <div className="flex flex-col space-y-1 mb-4">
-                  {product.variants?.map((variant, vIdx) => (
-                    <div key={vIdx} className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-pink-600">
-                        {variant.prices && variant.prices.length > 0
-                          ? `${Math.floor(variant.prices[0].amount)}₺`
-                          : 'Fiyat Yok'}
-                      </span>
-                      {variant.prices && variant.prices.length > 1 && (
-                        <span className="text-lg text-gray-400 line-through">
-                          {Math.floor(variant.prices[1].amount)}₺
+                  {product.variants?.map((variant, vIdx) => {
+                    if (!variant.prices || variant.prices.length === 0) {
+                      return (
+                        <div key={vIdx} className="flex items-center space-x-2">
+                          <span className="text-2xl font-bold text-pink-600">Fiyat Yok</span>
+                        </div>
+                      );
+                    }
+                    // Fiyatları büyükten küçüğe sırala (eski fiyat en yüksek, yeni fiyat en düşük)
+                    const sorted = [...variant.prices].sort((a, b) => b.amount - a.amount);
+                    const eskiFiyat = sorted[0].amount;
+                    const yeniFiyat = sorted[sorted.length - 1].amount;
+                    let indirimYuzdesi = 0;
+                    if (eskiFiyat > yeniFiyat) {
+                      indirimYuzdesi = Math.round(((eskiFiyat - yeniFiyat) / eskiFiyat) * 100);
+                    }
+                    return (
+                      <div key={vIdx} className="flex items-center space-x-2">
+                        <span className="text-2xl font-bold text-pink-600">
+                          {`${Math.floor(yeniFiyat)}₺`}
                         </span>
-                      )}
-                    </div>
-                  ))}
+                        {sorted.length > 1 && eskiFiyat > yeniFiyat && (
+                          <span className="text-lg text-gray-400 line-through">
+                            {Math.floor(eskiFiyat)}₺
+                          </span>
+                        )}
+                        {indirimYuzdesi > 0 && (
+                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                            %{indirimYuzdesi} İndirim
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Sepete Ekle Butonu */}
