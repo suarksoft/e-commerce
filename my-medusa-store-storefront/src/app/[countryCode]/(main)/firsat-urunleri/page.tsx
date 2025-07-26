@@ -1,8 +1,7 @@
-"use client"
-import React, { useState, useEffect } from 'react'
+
+import React from 'react'
 import { Clock, Star, Heart, ShoppingCart, Flame, Tag } from 'lucide-react'
 import Link from 'next/link'
-import axios from "axios"
 
 type Product = {
   id: string;
@@ -14,88 +13,55 @@ type Product = {
 };
 
 
-
-
-const page = () => {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-
-
-
-  const getFirsatUrunleri = async (limit = 20) => {
-    try {
-      // 1. Kategori ID'sini al
-      const categoryRes = await axios.get(
-        `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri`,
-        {
-          headers: {
-            "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-          },
-        }
-      );
-
-      const categoryId = categoryRes.data.product_categories?.[0]?.id;
-      
-      // DEBUG: Alınan kategori ID'sini konsola yazdır
-      console.log("Alınan Kategori ID:", categoryId);
-
-      if (!categoryId) {
-        console.error("Fırsat ürünleri kategorisi bulunamadı");
-        return [];
-      }
-
-      // DEBUG: Ürünleri çekmek için oluşturulan tam URL'yi konsola yazdır
-      const requestUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?category_id[]=${categoryId}&limit=${limit}`;
-      console.log("API İstek URL:", requestUrl);
-
-      // 2. Sadece bu kategoriye ait ürünleri çek
-      const productsRes = await axios.get(requestUrl, {
+async function getFirsatUrunleri(limit = 20): Promise<Product[]> {
+  try {
+    // 1. Kategori ID'sini al
+    const categoryRes = await fetch(
+      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri`,
+      {
         headers: {
           "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
         },
-      });
-      
-      // DEBUG: API'den gelen ürün sayısını kontrol et
-      console.log("Gelen ürün sayısı:", productsRes.data.products.length);
-
-
-      // Gelen ürünleri döndür
-      const parsedProducts = (productsRes.data.products || []).map((product: Product) => {
-        const metadata = product.metadata || {};
-        return { ...product, metadata };
-      });
-
-      return parsedProducts;
-    } catch (error) {
-      console.error("API hatası:", error);
+        cache: 'no-store',
+      }
+    );
+    const categoryData = await categoryRes.json();
+    const categoryId = categoryData.product_categories?.[0]?.id;
+    if (!categoryId) {
       return [];
     }
-  };
-
-  useEffect(() => {
-    getFirsatUrunleri().then(products => {
-      console.log("Fırsat ürünleri:", products)
-      setProducts(products)
-      setLoading(false)
-    })
-  }, [])
-
-  const subKategoriler = [
-    { name: "İndirimli", href: "/firsat-urunleri/indirimli", count: 45 },
-    { name: "%50'ye Varan", href: "/firsat-urunleri/50ye-varan", count: 32 },
-    { name: "Son Fırsat", href: "/firsat-urunleri/son-firsat", count: 12 }
-  ]
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Fırsat ürünleri yükleniyor...</p>
-        </div>
-      </div>
-    )
+    const requestUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?category_id[]=${categoryId}&limit=${limit}&expand=categories`;
+    const productsRes = await fetch(requestUrl, {
+      headers: {
+        "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+      },
+      cache: 'no-store',
+    });
+    const productsData = await productsRes.json();
+    // Hata ayıklama: categoryId ve ilk ürünün kategorilerini logla
+    if (productsData.products && productsData.products.length > 0) {
+      console.log('categoryId:', categoryId);
+      console.log('İlk ürün kategorileri:', productsData.products[0].categories);
+    }
+    // Filtreyi kaldır, tüm ürünleri döndür
+    const parsedProducts = (productsData.products || []).map((product: Product) => {
+      const metadata = product.metadata || {};
+      return { ...product, metadata };
+    });
+    return parsedProducts;
+  } catch (error) {
+    return [];
   }
+}
+
+const subKategoriler = [
+  { name: "İndirimli", href: "/firsat-urunleri/indirimli", count: 45 },
+  { name: "%50'ye Varan", href: "/firsat-urunleri/50ye-varan", count: 32 },
+  { name: "Son Fırsat", href: "/firsat-urunleri/son-firsat", count: 12 }
+];
+
+const Page = async () => {
+  const products = await getFirsatUrunleri();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -263,6 +229,7 @@ const page = () => {
         </div>
 
         {/* Ürün bulunamadı mesajı */}
+
         {products.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">Henüz fırsat ürünü bulunmuyor.</p>
@@ -282,4 +249,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page
