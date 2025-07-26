@@ -15,7 +15,7 @@
   "scripts": {
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
-    "start": "NODE_ENV=production medusa start",
+    "start": "NODE_ENV=production medusa build && medusa start",
     "dev": "medusa develop",
     "postinstall": "medusa build",
     "migrate": "medusa migrations run",
