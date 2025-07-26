@@ -203,17 +203,21 @@ const Page = async () => {
                 </div>
 
                 {/* Fiyat */}
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className="text-2xl font-bold text-pink-600">
-                    {product.variants?.[0]?.prices?.[0]?.amount 
-                      ? Math.floor(product.variants[0].prices[0].amount / 100)
-                      : 149}₺
-                  </span>
-                  <span className="text-lg text-gray-400 line-through">
-                    {product.variants?.[0]?.prices?.[0]?.amount 
-                      ? Math.floor(product.variants[0].prices[0].amount / 50)
-                      : 299}₺
-                  </span>
+                <div className="flex flex-col space-y-1 mb-4">
+                  {product.variants?.map((variant, vIdx) => (
+                    <div key={vIdx} className="flex items-center space-x-2">
+                      <span className="text-2xl font-bold text-pink-600">
+                        {variant.prices && variant.prices.length > 0
+                          ? `${Math.floor(variant.prices[0].amount)}₺`
+                          : 'Fiyat Yok'}
+                      </span>
+                      {variant.prices && variant.prices.length > 1 && (
+                        <span className="text-lg text-gray-400 line-through">
+                          {Math.floor(variant.prices[1].amount)}₺
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Sepete Ekle Butonu */}

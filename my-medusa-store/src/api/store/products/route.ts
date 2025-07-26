@@ -20,7 +20,7 @@ export async function GET(
     const { 
       limit, 
       offset, 
-      fields,
+      fields: queryFields,
       expand,
       category_id,
       region_id,
@@ -33,6 +33,22 @@ export async function GET(
       validFilters.collection_id = collection_id
     }
     
+    const relations = [
+      "variants",
+      "variants.prices",
+      // ...diğer ilişkiler...
+    ];
+    const productFields = [
+      // ...diğer alanlar...
+      "variants",
+      "variants.id",
+      "variants.title",
+      "variants.prices",
+      "variants.prices.amount",
+      "variants.prices.currency_code",
+      // ...gerekirse diğer price alanları...
+    ];
+
     const { data: products } = await query.graph({
       entity: "product",
       fields: [
@@ -60,6 +76,7 @@ export async function GET(
         "collection.*",
         "categories.*",
         "variants.*",
+        "variants.prices.*",
         "images.*",
         "options.*",
         "tags.*"
