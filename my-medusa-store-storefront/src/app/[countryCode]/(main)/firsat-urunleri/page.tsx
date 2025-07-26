@@ -1,4 +1,3 @@
-
 import React from 'react'
 import { Clock, Star, Heart, ShoppingCart, Flame, Tag } from 'lucide-react'
 import Link from 'next/link'
@@ -30,24 +29,23 @@ async function getFirsatUrunleri(limit = 20): Promise<Product[]> {
     if (!categoryId) {
       return [];
     }
-    const requestUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?category_id[]=${categoryId}&limit=${limit}&expand=categories`;
-    const productsRes = await fetch(requestUrl, {
+    // Tüm ürünleri çek, kategori alanı zaten dönüyorsa filtrele
+    const allProductsUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=${limit}`;
+    const allProductsRes = await fetch(allProductsUrl, {
       headers: {
         "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
       },
       cache: 'no-store',
     });
-    const productsData = await productsRes.json();
-    // Hata ayıklama: categoryId ve ilk ürünün kategorilerini logla
-    if (productsData.products && productsData.products.length > 0) {
-      console.log('categoryId:', categoryId);
-      console.log('İlk ürün kategorileri:', productsData.products[0].categories);
-    }
-    // Filtreyi kaldır, tüm ürünleri döndür
-    const parsedProducts = (productsData.products || []).map((product: Product) => {
-      const metadata = product.metadata || {};
-      return { ...product, metadata };
-    });
+    const allProductsData = await allProductsRes.json();
+    const parsedProducts = (allProductsData.products || [])
+      .filter((product: Product) =>
+        product.categories && product.categories.some(cat => cat && cat.id === categoryId)
+      )
+      .map((product: Product) => {
+        const metadata = product.metadata || {};
+        return { ...product, metadata };
+      });
     return parsedProducts;
   } catch (error) {
     return [];

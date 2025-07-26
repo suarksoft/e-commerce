@@ -58,6 +58,7 @@ export async function GET(
         "updated_at",
         "metadata",
         "collection.*",
+        "categories.*",
         "variants.*",
         "images.*",
         "options.*",
