@@ -2,28 +2,25 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
-// Ensure SSL for production database connections
+// Database URL with SSL for production
 const getDatabaseUrl = () => {
   const dbUrl = process.env.DATABASE_URL
-  if (process.env.NODE_ENV === 'production' && dbUrl && !dbUrl.includes('sslmode')) {
-    return `${dbUrl}?sslmode=require`
+  
+  if (!dbUrl) return undefined
+  
+  if (process.env.NODE_ENV === 'production') {
+    // Add SSL parameters for production
+    return dbUrl.includes('?') 
+      ? `${dbUrl}&sslmode=require` 
+      : `${dbUrl}?sslmode=require`
   }
+  
   return dbUrl
 }
 
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: getDatabaseUrl(),
-    databaseDriverOptions: 
-      process.env.NODE_ENV === 'production' 
-        ? {
-            connection: {
-              ssl: {
-                rejectUnauthorized: false
-              }
-            }
-          }
-        : {},
     http: {
       storeCors: process.env.STORE_CORS || "*",
       adminCors: process.env.ADMIN_CORS || "*",
