@@ -17,7 +17,7 @@ export type NativeSelectProps = {
 
 const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
   (
-    { placeholder = "Select...", defaultValue, className, children, ...props },
+    { placeholder = "Select...", defaultValue, className, children, value, ...props },
     ref
   ) => {
     const innerRef = useRef<HTMLSelectElement>(null)
@@ -27,6 +27,9 @@ const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
       ref,
       () => innerRef.current
     )
+
+    // Ensure value is always defined to prevent controlled/uncontrolled warning
+    const selectValue = value ?? ""
 
     useEffect(() => {
       if (innerRef.current && innerRef.current.value === "") {
@@ -52,6 +55,7 @@ const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
           <select
             ref={innerRef}
             defaultValue={defaultValue}
+            value={selectValue}
             {...props}
             className="appearance-none flex-1 bg-transparent border-none px-4 py-2.5 transition-colors duration-150 outline-none "
           >

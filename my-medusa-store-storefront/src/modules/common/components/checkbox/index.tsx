@@ -10,12 +10,15 @@ type CheckboxProps = {
 }
 
 const CheckboxWithLabel: React.FC<CheckboxProps> = ({
-  checked = true,
+  checked,
   onChange,
   label,
   name,
   'data-testid': dataTestId
 }) => {
+  // Ensure checked is always a boolean to prevent controlled/uncontrolled warning
+  const isChecked = Boolean(checked)
+  
   return (
     <div className="flex items-center space-x-2 ">
       <Checkbox
@@ -23,8 +26,8 @@ const CheckboxWithLabel: React.FC<CheckboxProps> = ({
         id="checkbox"
         role="checkbox"
         type="button"
-        checked={checked}
-        aria-checked={checked}
+        checked={isChecked}
+        aria-checked={isChecked}
         onClick={onChange}
         name={name}
         data-testid={dataTestId}

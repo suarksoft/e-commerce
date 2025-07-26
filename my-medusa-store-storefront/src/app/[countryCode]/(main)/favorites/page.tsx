@@ -1,22 +1,41 @@
-import { Metadata } from "next"
+"use client"
+
 import { getFavorites } from "@lib/data/favorites"
-import { redirect } from "next/navigation"
-import { retrieveCustomer } from "@lib/data/customer"
 import FavoriteProductsGrid from "@modules/favorites/components/favorite-products-grid"
+import { useEffect, useState } from "react"
+import { FavoriteProduct } from "@lib/data/favorites"
 
-export const metadata: Metadata = {
-  title: "Favori Ürünlerim",
-  description: "Favori ürünlerinizi görüntüleyin ve yönetin",
-}
+export default function FavoritesPage() {
+  const [favorites, setFavorites] = useState<FavoriteProduct[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default async function FavoritesPage() {
-  const customer = await retrieveCustomer()
-  
-  if (!customer) {
-    redirect("/account")
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const favs = await getFavorites()
+        setFavorites(favs)
+      } catch (error) {
+        console.error("Favoriler yüklenirken hata:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadFavorites()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="py-12">
+        <div className="content-container">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Favoriler yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
-
-  const favorites = await getFavorites()
 
   return (
     <div className="py-12">
