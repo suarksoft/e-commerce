@@ -84,7 +84,15 @@ const Page = async () => {
           </div>
         </div>
       </div>
-
+      {/* Geri Tuşu */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="mb-4">
+          <Link href="/firsat-urunleri" className="inline-flex items-center text-pink-600 hover:text-pink-800 font-semibold text-base group">
+            <svg className="h-5 w-5 mr-1 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            Geri
+          </Link>
+        </div>
+      </div>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Ürün Sayısı */}
         <div className="mb-6">
