@@ -186,7 +186,7 @@ const Page = async () => {
                   {product.title}
                 </h3>
                 {/* Rating */}
-                <div className="flex items-center space-x-1 mb-3">
+                {/* <div className="flex items-center space-x-1 mb-3">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
                       <Star
@@ -198,7 +198,7 @@ const Page = async () => {
                     ))}
                   </div>
                   <span className="text-sm text-gray-500">(128)</span>
-                </div>
+                </div> */}
                 {/* Fiyat ve İndirim */}
                 <div className="flex flex-col space-y-1 mb-4">
                   {product.variants?.map((variant, vIdx) => {
