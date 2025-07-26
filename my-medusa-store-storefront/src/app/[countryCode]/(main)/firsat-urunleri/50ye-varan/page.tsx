@@ -103,7 +103,7 @@ const Page = async () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Ürün Sayısı */}
         <div className="mb-6">
-          <p className="text-gray-700 font-medium">{filteredProducts.length} fırsat ürünü bulundu</p>
+          <p className="text-gray-700 font-medium">{filteredProducts.length} ürün bulundu</p>
         </div>
 
         {/* Ürün Grid */}
