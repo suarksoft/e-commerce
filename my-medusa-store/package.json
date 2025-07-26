@@ -15,7 +15,7 @@
   "scripts": {
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
-    "start": "MEDUSA_FF_SSL_ENABLED=false MEDUSA_FF_SSL_REQUIRED=false medusa start",
+    "start": "NODE_ENV=production medusa start",
     "dev": "medusa develop",
     "postinstall": "medusa build",
     "migrate": "medusa migrations run",
