@@ -4,7 +4,7 @@ import InteractiveLink from "@modules/common/components/interactive-link"
 import { Button } from "@medusajs/ui"
 import { ShoppingBag, Heart, Sparkles, TrendingUp, Star, ArrowRight, ShoppingCart } from "lucide-react"
 import Link from "next/link"
-
+import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 
 
 const EmptyCartMessage = () => {
