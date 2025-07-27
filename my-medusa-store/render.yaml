@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: moda-es-es-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: moda-es-es-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: STORE_CORS
+        value: https://your-frontend-domain.com
+      - key: ADMIN_CORS
+        value: https://your-admin-domain.com
+      - key: AUTH_CORS
+        value: https://your-frontend-domain.com
+    healthCheckPath: /health
+
+databases:
+  - name: moda-es-es-db
+    databaseName: moda_es_es
+    user: moda_es_es_user
+    plan: free 

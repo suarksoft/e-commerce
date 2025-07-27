@@ -28,7 +28,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL);
   const storeModuleService = container.resolve(Modules.STORE);
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  // Türkiye'yi de ekleyelim
+  const countries = ["gb", "de", "dk", "se", "fr", "es", "it", "tr"];
 
   logger.info("Seeding store data...");
   const [store] = await storeModuleService.listStores();
@@ -58,8 +59,11 @@ export default async function seedDemoData({ container }: ExecArgs) {
       update: {
         supported_currencies: [
           {
-            currency_code: "eur",
+            currency_code: "try", // Türkiye için TRY ekleyelim
             is_default: true,
+          },
+          {
+            currency_code: "eur",
           },
           {
             currency_code: "usd",
@@ -69,6 +73,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
       },
     },
   });
+  
   logger.info("Seeding region data...");
   const { result: regionResult } = await createRegionsWorkflow(container).run({
     input: {
@@ -76,13 +81,20 @@ export default async function seedDemoData({ container }: ExecArgs) {
         {
           name: "Europe",
           currency_code: "eur",
-          countries,
+          countries: ["gb", "de", "dk", "se", "fr", "es", "it"],
+          payment_providers: ["pp_system_default"],
+        },
+        {
+          name: "Turkey",
+          currency_code: "try",
+          countries: ["tr"],
           payment_providers: ["pp_system_default"],
         },
       ],
     },
   });
-  const region = regionResult[0];
+  const europeRegion = regionResult[0];
+  const turkeyRegion = regionResult[1];
   logger.info("Finished seeding regions.");
 
   logger.info("Seeding tax regions...");
@@ -108,14 +120,32 @@ export default async function seedDemoData({ container }: ExecArgs) {
             address_1: "",
           },
         },
+        {
+          name: "Turkey Warehouse",
+          address: {
+            city: "Istanbul",
+            country_code: "TR",
+            address_1: "",
+          },
+        },
       ],
     },
   });
-  const stockLocation = stockLocationResult[0];
+  const europeStockLocation = stockLocationResult[0];
+  const turkeyStockLocation = stockLocationResult[1];
 
   await link.create({
     [Modules.STOCK_LOCATION]: {
-      stock_location_id: stockLocation.id,
+      stock_location_id: europeStockLocation.id,
+    },
+    [Modules.FULFILLMENT]: {
+      fulfillment_provider_id: "manual_manual",
+    },
+  });
+
+  await link.create({
+    [Modules.STOCK_LOCATION]: {
+      stock_location_id: turkeyStockLocation.id,
     },
     [Modules.FULFILLMENT]: {
       fulfillment_provider_id: "manual_manual",
@@ -143,7 +173,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
     shippingProfile = shippingProfileResult[0];
   }
 
-  const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
+  // Avrupa için fulfillment set
+  const europeFulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
     name: "European Warehouse delivery",
     type: "shipping",
     service_zones: [
@@ -183,22 +214,49 @@ export default async function seedDemoData({ container }: ExecArgs) {
     ],
   });
 
+  // Türkiye için fulfillment set
+  const turkeyFulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
+    name: "Turkey Warehouse delivery",
+    type: "shipping",
+    service_zones: [
+      {
+        name: "Turkey",
+        geo_zones: [
+          {
+            country_code: "tr",
+            type: "country",
+          },
+        ],
+      },
+    ],
+  });
+
   await link.create({
     [Modules.STOCK_LOCATION]: {
-      stock_location_id: stockLocation.id,
+      stock_location_id: europeStockLocation.id,
     },
     [Modules.FULFILLMENT]: {
-      fulfillment_set_id: fulfillmentSet.id,
+      fulfillment_set_id: europeFulfillmentSet.id,
+    },
+  });
+
+  await link.create({
+    [Modules.STOCK_LOCATION]: {
+      stock_location_id: turkeyStockLocation.id,
+    },
+    [Modules.FULFILLMENT]: {
+      fulfillment_set_id: turkeyFulfillmentSet.id,
     },
   });
 
   await createShippingOptionsWorkflow(container).run({
     input: [
+      // Avrupa için kargo seçenekleri
       {
         name: "Standard Shipping",
         price_type: "flat",
         provider_id: "manual_manual",
-        service_zone_id: fulfillmentSet.service_zones[0].id,
+        service_zone_id: europeFulfillmentSet.service_zones[0].id,
         shipping_profile_id: shippingProfile.id,
         type: {
           label: "Standard",
@@ -215,7 +273,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
-            region_id: region.id,
+            region_id: europeRegion.id,
             amount: 10,
           },
         ],
@@ -236,7 +294,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
         name: "Express Shipping",
         price_type: "flat",
         provider_id: "manual_manual",
-        service_zone_id: fulfillmentSet.service_zones[0].id,
+        service_zone_id: europeFulfillmentSet.service_zones[0].id,
         shipping_profile_id: shippingProfile.id,
         type: {
           label: "Express",
@@ -253,8 +311,111 @@ export default async function seedDemoData({ container }: ExecArgs) {
             amount: 10,
           },
           {
-            region_id: region.id,
+            region_id: europeRegion.id,
             amount: 10,
+          },
+        ],
+        rules: [
+          {
+            attribute: "enabled_in_store",
+            value: "true",
+            operator: "eq",
+          },
+          {
+            attribute: "is_return",
+            value: "false",
+            operator: "eq",
+          },
+        ],
+      },
+      // Türkiye için kargo seçenekleri
+      {
+        name: "Yurtiçi Kargo",
+        price_type: "flat",
+        provider_id: "manual_manual",
+        service_zone_id: turkeyFulfillmentSet.service_zones[0].id,
+        shipping_profile_id: shippingProfile.id,
+        type: {
+          label: "Standard",
+          description: "2-3 iş günü içinde teslimat.",
+          code: "standard",
+        },
+        prices: [
+          {
+            currency_code: "try",
+            amount: 2500, // 25 TL
+          },
+          {
+            region_id: turkeyRegion.id,
+            amount: 2500,
+          },
+        ],
+        rules: [
+          {
+            attribute: "enabled_in_store",
+            value: "true",
+            operator: "eq",
+          },
+          {
+            attribute: "is_return",
+            value: "false",
+            operator: "eq",
+          },
+        ],
+      },
+      {
+        name: "Aras Kargo",
+        price_type: "flat",
+        provider_id: "manual_manual",
+        service_zone_id: turkeyFulfillmentSet.service_zones[0].id,
+        shipping_profile_id: shippingProfile.id,
+        type: {
+          label: "Express",
+          description: "1-2 iş günü içinde teslimat.",
+          code: "express",
+        },
+        prices: [
+          {
+            currency_code: "try",
+            amount: 3500, // 35 TL
+          },
+          {
+            region_id: turkeyRegion.id,
+            amount: 3500,
+          },
+        ],
+        rules: [
+          {
+            attribute: "enabled_in_store",
+            value: "true",
+            operator: "eq",
+          },
+          {
+            attribute: "is_return",
+            value: "false",
+            operator: "eq",
+          },
+        ],
+      },
+      {
+        name: "MNG Kargo",
+        price_type: "flat",
+        provider_id: "manual_manual",
+        service_zone_id: turkeyFulfillmentSet.service_zones[0].id,
+        shipping_profile_id: shippingProfile.id,
+        type: {
+          label: "Economy",
+          description: "3-5 iş günü içinde teslimat.",
+          code: "economy",
+        },
+        prices: [
+          {
+            currency_code: "try",
+            amount: 2000, // 20 TL
+          },
+          {
+            region_id: turkeyRegion.id,
+            amount: 2000,
           },
         ],
         rules: [
@@ -276,7 +437,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
 
   await linkSalesChannelsToStockLocationWorkflow(container).run({
     input: {
-      id: stockLocation.id,
+      id: europeStockLocation.id,
       add: [defaultSalesChannel[0].id],
     },
   });
@@ -841,7 +1002,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const inventoryLevels: CreateInventoryLevelInput[] = [];
   for (const inventoryItem of inventoryItems) {
     const inventoryLevel = {
-      location_id: stockLocation.id,
+      location_id: europeStockLocation.id,
       stocked_quantity: 1000000,
       inventory_item_id: inventoryItem.id,
     };
