@@ -1,54 +1,142 @@
 import React from 'react'
 import { Clock, Star, Heart, ShoppingCart, Flame, Tag } from 'lucide-react'
 import Link from 'next/link'
+import { listProducts } from "@lib/data/products"
+import { getRegion } from "@lib/data/regions"
+import { getCategoryByName } from "@lib/data/categories"
 
 type Product = {
   id: string;
   title: string;
-  thumbnail?: string;
-  categories?: { id: string; name: string }[]; // id eklendi!
-  variants?: { prices?: { amount: number }[]; metadata?: { [key: string]: any } }[];
+  thumbnail?: string | null;
+  categories?: { id: string; name: string }[] | null;
+  variants?: { 
+    prices?: { amount: number; currency_code?: string }[]; 
+    metadata?: { [key: string]: any };
+    calculated_price?: { calculated_amount: number };
+  }[];
   metadata?: { [key: string]: any };
+  handle?: string;
+  _calculated_price?: number;
+  _has_discount?: boolean;
+  _discount_percentage?: number;
 };
 
-
-async function getFirsatUrunleri(limit = 20): Promise<Product[]> {
+async function getFirsatUrunleri(limit = 20, countryCode: string): Promise<Product[]> {
   try {
-    // 1. Kategori ID'sini al
-    const categoryRes = await fetch(
-      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/product-categories?handle=firsat-urunleri`,
-      {
-        headers: {
-          "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-        },
-        cache: 'no-store',
-      }
-    );
-    const categoryData = await categoryRes.json();
-    const categoryId = categoryData.product_categories?.[0]?.id;
-    if (!categoryId) {
-      return [];
+    const region = await getRegion(countryCode)
+    if (!region) return []
+
+    // 1. Önce "firsat-urunleri" kategorisini dene
+    let firsatCategory = await getCategoryByName("firsat-urunleri")
+    
+    // 2. Eğer yoksa "indirim" kategorisini dene
+    if (!firsatCategory) {
+      firsatCategory = await getCategoryByName("indirim")
     }
-    // Tüm ürünleri çek, kategori alanı zaten dönüyorsa filtrele
-    const allProductsUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/products?limit=${limit}`;
-    const allProductsRes = await fetch(allProductsUrl, {
-      headers: {
-        "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-      },
-      cache: 'no-store',
-    });
-    const allProductsData = await allProductsRes.json();
-    const parsedProducts = (allProductsData.products || [])
-      .filter((product: Product) =>
-        product.categories && product.categories.some(cat => cat && cat.id === categoryId)
-      )
-      .map((product: Product) => {
-        const metadata = product.metadata || {};
-        return { ...product, metadata };
-      });
-    return parsedProducts;
+    
+    // 3. Eğer o da yoksa "elbise" kategorisini dene (fallback)
+    if (!firsatCategory) {
+      firsatCategory = await getCategoryByName("elbise")
+    }
+
+    let products: any[] = []
+
+    if (firsatCategory) {
+      // Kategori varsa o kategoriden ürünleri çek
+      const { response } = await listProducts({
+        queryParams: {
+          limit: limit * 2, // Daha fazla çek ki filtreleyelim
+          category_id: [firsatCategory.id],
+        } as any,
+        countryCode,
+      })
+      products = response.products
+    } else {
+      // Kategori yoksa tüm ürünleri çek
+      const { response } = await listProducts({
+        queryParams: {
+          limit: limit * 2,
+        },
+        countryCode,
+      })
+      products = response.products
+    }
+
+    // Ürünleri işle ve fırsat ürünlerini filtrele
+    const processedProducts = products
+      .map((product: any) => {
+        // Fiyat hesaplama
+        const variant = product.variants?.[0]
+        const calculatedPrice = variant?.calculated_price?.calculated_amount || 0
+        const originalPrices = variant?.prices || []
+        
+        // İndirim hesaplama
+        let discountPercentage = 0
+        let hasDiscount = false
+        
+        if (originalPrices.length > 1) {
+          const sortedPrices = [...originalPrices].sort((a, b) => b.amount - a.amount)
+          const highestPrice = sortedPrices[0].amount
+          const lowestPrice = sortedPrices[sortedPrices.length - 1].amount
+          
+          if (highestPrice > lowestPrice) {
+            discountPercentage = Math.round(((highestPrice - lowestPrice) / highestPrice) * 100)
+            hasDiscount = true
+          }
+        }
+
+        // Metadata işleme
+        const metadata = {
+          ...product.metadata,
+          discount_percentage: discountPercentage,
+          has_discount: hasDiscount,
+          is_last_chance: product.metadata?.isLastChance === "True" || 
+                         variant?.metadata?.isLastChance === "True",
+          discount_end: product.metadata?.discount_end || 
+                       variant?.metadata?.discount_end,
+        }
+
+        return {
+          ...product,
+          metadata,
+          _calculated_price: calculatedPrice,
+          _has_discount: hasDiscount,
+          _discount_percentage: discountPercentage,
+        }
+      })
+      .filter((product: any) => {
+        // Fırsat ürünü kriterleri:
+        // 1. İndirim varsa
+        // 2. Son fırsat ise
+        // 3. Metadata'da fırsat işareti varsa
+        // 4. Veya kategori fırsat kategorisiyse
+        return (
+          product._has_discount ||
+          product.metadata?.is_last_chance ||
+          product.metadata?.is_firsat === "True" ||
+          firsatCategory?.name?.toLowerCase().includes("fırsat") ||
+          firsatCategory?.name?.toLowerCase().includes("indirim")
+        )
+      })
+      .sort((a: any, b: any) => {
+        // Önce indirim yüzdesine göre sırala (yüksekten düşüğe)
+        if (a._discount_percentage !== b._discount_percentage) {
+          return b._discount_percentage - a._discount_percentage
+        }
+        // Sonra son fırsat olanları öne çıkar
+        if (a.metadata?.is_last_chance !== b.metadata?.is_last_chance) {
+          return a.metadata?.is_last_chance ? -1 : 1
+        }
+        // Son olarak fiyata göre sırala (düşükten yükseğe)
+        return a._calculated_price - b._calculated_price
+      })
+      .slice(0, limit)
+
+    return processedProducts
   } catch (error) {
-    return [];
+    console.error("Fırsat ürünleri alınırken hata:", error)
+    return []
   }
 }
 
@@ -58,8 +146,9 @@ const subKategoriler = [
   { name: "Son Fırsat", href: "/firsat-urunleri/son-firsat", count: 12 }
 ];
 
-const Page = async () => {
-  const products = await getFirsatUrunleri();
+const Page = async ({ params }: { params: Promise<{ countryCode: string }> }) => {
+  const { countryCode } = await params
+  const products = await getFirsatUrunleri(20, countryCode);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -129,30 +218,15 @@ const Page = async () => {
                 
                 {/* İndirim Badge */}
                 <div className="absolute top-3 left-3 space-y-2">
-                  {(() => {
-                    const variant = product.variants?.[0];
-                    if (!variant || !variant.prices || variant.prices.length < 2) return null;
-                    const sorted = [...variant.prices].sort((a, b) => b.amount - a.amount);
-                    const eskiFiyat = sorted[0].amount;
-                    const yeniFiyat = sorted[sorted.length - 1].amount;
-                    let indirimYuzdesi = 0;
-                    if (eskiFiyat > yeniFiyat) {
-                      indirimYuzdesi = Math.round(((eskiFiyat - yeniFiyat) / eskiFiyat) * 100);
-                    }
-                    if (indirimYuzdesi > 0) {
-                      return (
-                        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1 shadow-lg">
-                          <Tag className="h-3 w-3" />
-                          <span>%{indirimYuzdesi}</span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  {(product._discount_percentage || 0) > 0 && (
+                    <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1 shadow-lg">
+                      <Tag className="h-3 w-3" />
+                      <span>%{product._discount_percentage || 0}</span>
+                    </div>
+                  )}
                   
                   {/* Son Fırsat Badge */}
-                  {(product.metadata?.isLastChance === "True" || 
-                    product.variants?.[0]?.metadata?.isLastChance === "True") && (
+                  {product.metadata?.is_last_chance && (
                     <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg animate-pulse">
                       <Flame className="h-3 w-3" />
                       <span>SON FIRSAT</span>
@@ -166,18 +240,15 @@ const Page = async () => {
                 </button>
 
                 {/* Kalan Süre */}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <div className="bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg text-center">
-                    <div className="flex items-center justify-center space-x-1 text-sm">
-                      <Clock className="h-3 w-3" />
-                      {product.metadata?.discount_end ||
-                      product.variants?.[0]?.metadata?.discount_end ? (
+                {product.metadata?.discount_end && (
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg text-center">
+                      <div className="flex items-center justify-center space-x-1 text-sm">
+                        <Clock className="h-3 w-3" />
                         <span>
                           Son gün: {
                             (() => {
-                              const tarih =
-                                product.metadata?.discount_end ||
-                                product.variants?.[0]?.metadata?.discount_end;
+                              const tarih = product.metadata?.discount_end;
                               const dateObj = !isNaN(Date.parse(tarih))
                                 ? new Date(tarih)
                                 : new Date(tarih.replace(/-/g, '/'));
@@ -185,10 +256,10 @@ const Page = async () => {
                             })()
                           }
                         </span>
-                      ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Ürün Bilgileri */}
@@ -199,58 +270,24 @@ const Page = async () => {
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-pink-600 transition-colors">
                   {product.title}
                 </h3>
-                
-                {/* Rating */}
-                {/* <div className="flex items-center space-x-1 mb-3">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < 4 ? "text-yellow-400 fill-current" : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-500">(128)</span>
-                </div> */}
 
                 {/* Fiyat ve İndirim */}
                 <div className="flex flex-col space-y-1 mb-4">
-                  {product.variants?.map((variant, vIdx) => {
-                    if (!variant.prices || variant.prices.length === 0) {
-                      return (
-                        <div key={vIdx} className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-pink-600">Fiyat Yok</span>
-                        </div>
-                      );
-                    }
-                    // Fiyatları büyükten küçüğe sırala (eski fiyat en yüksek, yeni fiyat en düşük)
-                    const sorted = [...variant.prices].sort((a, b) => b.amount - a.amount);
-                    const eskiFiyat = sorted[0].amount;
-                    const yeniFiyat = sorted[sorted.length - 1].amount;
-                    let indirimYuzdesi = 0;
-                    if (eskiFiyat > yeniFiyat) {
-                      indirimYuzdesi = Math.round(((eskiFiyat - yeniFiyat) / eskiFiyat) * 100);
-                    }
-                    return (
-                      <div key={vIdx} className="flex items-center space-x-2">
-                        <span className="text-2xl font-bold text-pink-600">
-                          {`${Math.floor(yeniFiyat)}₺`}
-                        </span>
-                        {sorted.length > 1 && eskiFiyat > yeniFiyat && (
-                          <span className="text-lg text-gray-400 line-through">
-                            {Math.floor(eskiFiyat)}₺
-                          </span>
-                        )}
-                        {indirimYuzdesi > 0 && (
-                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
-                            %{indirimYuzdesi} İndirim
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  <div className="flex items-center space-x-2">
+                                         <span className="text-2xl font-bold text-pink-600">
+                       {`${Math.floor(product._calculated_price || 0)}₺`}
+                     </span>
+                    {product._has_discount && product.variants?.[0]?.prices && (
+                      <>
+                                                 <span className="text-lg text-gray-400 line-through">
+                           {Math.floor(Math.max(...(product.variants[0].prices?.map(p => p.amount) || [0])))}₺
+                         </span>
+                                                 <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                           %{product._discount_percentage || 0} İndirim
+                         </span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Sepete Ekle Butonu */}
@@ -264,7 +301,6 @@ const Page = async () => {
         </div>
 
         {/* Ürün bulunamadı mesajı */}
-
         {products.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">Henüz fırsat ürünü bulunmuyor.</p>

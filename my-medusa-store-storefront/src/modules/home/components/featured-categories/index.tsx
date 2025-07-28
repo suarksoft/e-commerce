@@ -39,13 +39,24 @@ async function CategoryRail({
           `/store/products/${product.id}`,
           {
             query: {
-              fields: "*variants,*images,*options,*tags,*categories",
+              fields: "*variants,*variants.calculated_price,*images,*options,*tags,*categories",
+              region_id: region.id,
             },
             headers: {
+              "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
               "x-currency-code": region.currency_code,
             },
           }
         )
+        
+        // Debug için fiyat bilgilerini kontrol et
+        console.log(`Product ${product.id} price data:`, {
+          variants: response.product.variants?.map(v => ({
+            id: v.id,
+            calculated_price: v.calculated_price
+          }))
+        })
+        
         return response.product
       } catch (error) {
         console.error(`Error fetching product ${product.id}:`, error)

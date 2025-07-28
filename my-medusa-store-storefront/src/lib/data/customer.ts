@@ -96,7 +96,13 @@ export async function signup(_currentState: unknown, formData: FormData) {
     const customerCacheTag = await getCacheTag("customers")
     revalidateTag(customerCacheTag)
 
-    await transferCart()
+    // Cart transfer işlemini ayrı try-catch ile yap
+    try {
+      await transferCart()
+    } catch (error: any) {
+      console.error("Cart transfer failed during signup:", error)
+      // Cart transfer hatası signup'ı engellemez, sadece banner gösterilir
+    }
 
     return createdCustomer
   } catch (error: any) {
@@ -120,10 +126,14 @@ export async function login(_currentState: unknown, formData: FormData) {
     return error.toString()
   }
 
+  // Cart transfer işlemini ayrı try-catch ile yap
+  // Eğer başarısız olursa, banner gösterilecek
   try {
     await transferCart()
   } catch (error: any) {
-    return error.toString()
+    console.error("Cart transfer failed during login:", error)
+    // Cart transfer hatası login'i engellemez, sadece banner gösterilir
+    // Bu nedenle error return etmiyoruz
   }
 }
 
@@ -147,15 +157,29 @@ export async function transferCart() {
   const cartId = await getCartId()
 
   if (!cartId) {
+    console.log("No cart ID found for transfer")
     return
   }
 
   const headers = await getAuthHeaders()
 
-  await sdk.store.cart.transferCart(cartId, {}, headers)
+  if (!headers) {
+    console.log("No auth headers found for cart transfer")
+    return
+  }
 
-  const cartCacheTag = await getCacheTag("carts")
-  revalidateTag(cartCacheTag)
+  try {
+    console.log("Attempting to transfer cart:", cartId)
+    await sdk.store.cart.transferCart(cartId, {}, headers)
+    
+    const cartCacheTag = await getCacheTag("carts")
+    revalidateTag(cartCacheTag)
+    
+    console.log("Cart transfer successful")
+  } catch (error) {
+    console.error("Cart transfer failed:", error)
+    throw error // Re-throw to be handled by the calling function
+  }
 }
 
 export const addCustomerAddress = async (
