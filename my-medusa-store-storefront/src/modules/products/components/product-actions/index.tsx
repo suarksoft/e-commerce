@@ -11,6 +11,8 @@ import { useParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ProductPrice from "../product-price"
 import MobileActions from "./mobile-actions"
+import { Heart } from "lucide-react"
+import { addToFavorites, removeFromFavorites, isProductFavorited } from "@lib/data/favorites"
 
 type ProductActionsProps = {
   product: HttpTypes.StoreProduct
@@ -33,7 +35,24 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
   const countryCode = useParams().countryCode as string
+
+  // Check if product is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      try {
+        const favorited = await isProductFavorited(product.id!)
+        setIsFavorited(favorited)
+      } catch (error) {
+        console.error("Error checking favorite status:", error)
+      }
+    }
+    if (product.id) {
+      checkFavoriteStatus()
+    }
+  }, [product.id])
 
   // If there is only 1 variant, preselect the options
   useEffect(() => {
@@ -113,53 +132,102 @@ export default function ProductActions({
     setIsAdding(false)
   }
 
+  // handle favorite toggle
+  const handleFavoriteToggle = async () => {
+    if (!product.id) return
+
+    setIsFavoriteLoading(true)
+    try {
+      if (isFavorited) {
+        await removeFromFavorites(product.id)
+        setIsFavorited(false)
+      } else {
+        await addToFavorites(product.id)
+        setIsFavorited(true)
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error)
+    } finally {
+      setIsFavoriteLoading(false)
+    }
+  }
+
   return (
     <>
-      <div className="flex flex-col gap-y-2" ref={actionsRef}>
-        <div>
-          {(product.variants?.length ?? 0) > 1 && (
-            <div className="flex flex-col gap-y-4">
-              {(product.options || []).map((option) => {
-                return (
-                  <div key={option.id}>
-                    <OptionSelect
-                      option={option}
-                      current={options[option.id]}
-                      updateOption={setOptionValue}
-                      title={option.title ?? ""}
-                      data-testid="product-options"
-                      disabled={!!disabled || isAdding}
-                    />
-                  </div>
-                )
-              })}
-              <Divider />
-            </div>
-          )}
-        </div>
-
+      <div className="flex flex-col gap-y-6" ref={actionsRef}>
+        {/* Price */}
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
-          onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
-          data-testid="add-product-button"
-        >
-          {!selectedVariant && !options
-            ? "Varyant Seç"
-            : !inStock || !isValidVariant
-            ? "Stokta Yok"
-            : "Sepete Ekle"}
-        </Button>
+        {/* Options */}
+        {(product.variants?.length ?? 0) > 1 && (
+          <div className="flex flex-col gap-y-4">
+            {(product.options || []).map((option) => {
+              return (
+                <div key={option.id}>
+                  <OptionSelect
+                    option={option}
+                    current={options[option.id]}
+                    updateOption={setOptionValue}
+                    title={option.title ?? ""}
+                    data-testid="product-options"
+                    disabled={!!disabled || isAdding}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex space-x-4">
+          <button
+            onClick={handleAddToCart}
+            disabled={
+              !inStock ||
+              !selectedVariant ||
+              !!disabled ||
+              isAdding ||
+              !isValidVariant
+            }
+            className="flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-rose-600 px-8 py-3 text-base font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-gray-50 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 sm:w-full"
+          >
+            {isAdding ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Ekleniyor...
+              </div>
+            ) : !selectedVariant && !options ? (
+              "Varyant Seç"
+            ) : !inStock || !isValidVariant ? (
+              "Stokta Yok"
+            ) : (
+              "Sepete Ekle"
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleFavoriteToggle}
+            disabled={isFavoriteLoading}
+            className="flex items-center justify-center rounded-md px-3 py-3 text-gray-400 hover:bg-gray-100 hover:text-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50"
+          >
+            {isFavoriteLoading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400"></div>
+            ) : (
+              <Heart 
+                className={`h-6 w-6 flex-shrink-0 transition-colors duration-200 ${
+                  isFavorited 
+                    ? "text-rose-500 fill-current" 
+                    : "text-gray-400"
+                }`} 
+              />
+            )}
+            <span className="sr-only">
+              {isFavorited ? "Favorilerden çıkar" : "Favorilere ekle"}
+            </span>
+          </button>
+        </div>
+
         <MobileActions
           product={product}
           variant={selectedVariant}
