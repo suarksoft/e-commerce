@@ -3,6 +3,12 @@ import { getPercentageDiff } from "./get-precentage-diff"
 import { convertToLocale } from "./money"
 
 export const getPricesForVariant = (variant: any) => {
+  console.log('getPricesForVariant Debug:', {
+    variantId: variant?.id,
+    calculated_price: variant?.calculated_price,
+    has_calculated_price: !!variant?.calculated_price?.calculated_amount
+  })
+
   if (!variant?.calculated_price?.calculated_amount) {
     return null
   }
@@ -39,6 +45,16 @@ export function getProductPrice({
   }
 
   const cheapestPrice = () => {
+    console.log('getProductPrice Debug:', {
+      productId: product.id,
+      productTitle: product.title,
+      variantsCount: product.variants?.length,
+      variants: product.variants?.map(v => ({
+        id: v.id,
+        has_calculated_price: !!(v as any).calculated_price
+      }))
+    })
+
     if (!product || !product.variants?.length) {
       return null
     }
@@ -51,6 +67,11 @@ export function getProductPrice({
           b.calculated_price.calculated_amount
         )
       })[0]
+
+    console.log('Cheapest variant found:', {
+      variantId: cheapestVariant?.id,
+      has_calculated_price: !!cheapestVariant?.calculated_price
+    })
 
     return getPricesForVariant(cheapestVariant)
   }

@@ -1,120 +1,173 @@
 "use client"
 
-import Back from "@modules/common/icons/back"
-import FastDelivery from "@modules/common/icons/fast-delivery"
-import Refresh from "@modules/common/icons/refresh"
-
-import Accordion from "./accordion"
+import { useState } from "react"
+import { Minus, Plus } from "lucide-react"
 import { HttpTypes } from "@medusajs/types"
 
 type ProductTabsProps = {
   product: HttpTypes.StoreProduct
 }
 
+// Collapsible Section Component
+const DisclosureSection = ({ 
+  title, 
+  children, 
+  defaultOpen = false 
+}: { 
+  title: string; 
+  children: React.ReactNode; 
+  defaultOpen?: boolean 
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <div className="border-t border-gray-200">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between py-6 text-left"
+      >
+        <span className="text-sm font-medium text-gray-900 group-data-open:text-rose-600">
+          {title}
+        </span>
+        <span className="ml-6 flex items-center">
+          {isOpen ? (
+            <Minus className="h-6 w-6 text-rose-400" />
+          ) : (
+            <Plus className="h-6 w-6 text-gray-400" />
+          )}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="pb-6">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const ProductTabs = ({ product }: ProductTabsProps) => {
-  const tabs = [
-    {
-      label: "Product Information",
-      component: <ProductInfoTab product={product} />,
-    },
-    {
-      label: "Shipping & Returns",
-      component: <ShippingInfoTab />,
-    },
-  ]
-
   return (
-    <div className="w-full">
-      <Accordion type="multiple">
-        {tabs.map((tab, i) => (
-          <Accordion.Item
-            key={i}
-            title={tab.label}
-            headingSize="medium"
-            value={tab.label}
-          >
-            {tab.component}
-          </Accordion.Item>
-        ))}
-      </Accordion>
-    </div>
-  )
-}
+    <section className="mt-12">
+      <h2 className="sr-only">Additional details</h2>
+      
+      <div className="divide-y divide-gray-200 border-t">
+        {/* Product Information */}
+        <DisclosureSection title="Ürün Bilgileri" defaultOpen={true}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            <div className="flex flex-col gap-y-4">
+              {product.material && (
+                <div>
+                  <span className="font-semibold text-gray-900">Malzeme</span>
+                  <p className="text-sm text-gray-700 mt-1">{product.material}</p>
+                </div>
+              )}
+              {product.origin_country && (
+                <div>
+                  <span className="font-semibold text-gray-900">Menşe Ülke</span>
+                  <p className="text-sm text-gray-700 mt-1">{product.origin_country}</p>
+                </div>
+              )}
+              {product.type && (
+                <div>
+                  <span className="font-semibold text-gray-900">Kategori</span>
+                  <p className="text-sm text-gray-700 mt-1">{product.type.value}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-y-4">
+              {product.weight && (
+                <div>
+                  <span className="font-semibold text-gray-900">Ağırlık</span>
+                  <p className="text-sm text-gray-700 mt-1">{product.weight} g</p>
+                </div>
+              )}
+              {(product.length && product.width && product.height) && (
+                <div>
+                  <span className="font-semibold text-gray-900">Boyutlar</span>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {product.length}L x {product.width}W x {product.height}H cm
+                  </p>
+                </div>
+              )}
+              {product.collection && (
+                <div>
+                  <span className="font-semibold text-gray-900">Koleksiyon</span>
+                  <p className="text-sm text-gray-700 mt-1">{product.collection.title}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DisclosureSection>
 
-const ProductInfoTab = ({ product }: ProductTabsProps) => {
-  return (
-    <div className="text-small-regular py-8">
-      <div className="grid grid-cols-2 gap-x-8">
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold">Material</span>
-            <p>{product.material ? product.material : "-"}</p>
+        {/* Care Instructions */}
+        <DisclosureSection title="Bakım Talimatları">
+          <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+            <li>30°C'de makine yıkayın</li>
+            <li>Benzer renklerle yıkayın</li>
+            <li>Orta ısıda ütüleyin</li>
+            <li>Kuru temizlemeye uygun</li>
+            <li>Çamaşır suyu kullanmayın</li>
+          </ul>
+        </DisclosureSection>
+
+        {/* Shipping & Delivery */}
+        <DisclosureSection title="Kargo & Teslimat">
+          <div className="space-y-4">
+            <div className="flex items-start gap-x-3">
+              <div className="flex-shrink-0 w-5 h-5 bg-rose-100 rounded-full flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Hızlı Teslimat</span>
+                <p className="text-sm text-gray-700 mt-1">
+                  500₺ üzeri siparişlerde ücretsiz kargo. 1-3 iş günü içinde teslimat.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-x-3">
+              <div className="flex-shrink-0 w-5 h-5 bg-rose-100 rounded-full flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Güvenli Teslimat</span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Kapıda ödeme imkanı ve kargo takip sistemi.
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold">Country of origin</span>
-            <p>{product.origin_country ? product.origin_country : "-"}</p>
+        </DisclosureSection>
+
+        {/* Returns & Exchange */}
+        <DisclosureSection title="İade & Değişim">
+          <div className="space-y-4">
+            <div className="flex items-start gap-x-3">
+              <div className="flex-shrink-0 w-5 h-5 bg-rose-100 rounded-full flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Kolay İade</span>
+                <p className="text-sm text-gray-700 mt-1">
+                  14 gün içinde ücretsiz iade. İade kargo etiketini biz karşılıyoruz.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-x-3">
+              <div className="flex-shrink-0 w-5 h-5 bg-rose-100 rounded-full flex items-center justify-center mt-0.5">
+                <div className="w-2 h-2 bg-rose-600 rounded-full"></div>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-900">Hızlı Değişim</span>
+                <p className="text-sm text-gray-700 mt-1">
+                  Beden veya renk değişimi için hızlı değişim imkanı. %100 para iade garantisi.
+                </p>
+              </div>
+            </div>
           </div>
-          <div>
-            <span className="font-semibold">Type</span>
-            <p>{product.type ? product.type.value : "-"}</p>
-          </div>
-        </div>
-        <div className="flex flex-col gap-y-4">
-          <div>
-            <span className="font-semibold">Weight</span>
-            <p>{product.weight ? `${product.weight} g` : "-"}</p>
-          </div>
-          <div>
-            <span className="font-semibold">Dimensions</span>
-            <p>
-              {product.length && product.width && product.height
-                ? `${product.length}L x ${product.width}W x ${product.height}H`
-                : "-"}
-            </p>
-          </div>
-        </div>
+        </DisclosureSection>
       </div>
-    </div>
-  )
-}
-
-const ShippingInfoTab = () => {
-  return (
-    <div className="text-small-regular py-8">
-      <div className="grid grid-cols-1 gap-y-8">
-        <div className="flex items-start gap-x-2">
-          <FastDelivery />
-          <div>
-            <span className="font-semibold">Fast delivery</span>
-            <p className="max-w-sm">
-              Your package will arrive in 3-5 business days at your pick up
-              location or in the comfort of your home.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-start gap-x-2">
-          <Refresh />
-          <div>
-            <span className="font-semibold">Simple exchanges</span>
-            <p className="max-w-sm">
-              Is the fit not quite right? No worries - we&apos;ll exchange your
-              product for a new one.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-start gap-x-2">
-          <Back />
-          <div>
-            <span className="font-semibold">Easy returns</span>
-            <p className="max-w-sm">
-              Just return your product and we&apos;ll refund your money. No
-              questions asked – we&apos;ll do our best to make sure your return
-              is hassle-free.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </section>
   )
 }
 
