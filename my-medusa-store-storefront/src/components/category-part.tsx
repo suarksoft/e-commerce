@@ -8,7 +8,7 @@ export default function CategoryPart() {
     {
       name: "Abiye Elbiseler",
       handle: "elbise",
-      image: "https://images.unsplash.com/photo-1566479179817-c0e5e7d8e2ee?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
+      image: "http://localhost:9000/static/1748560860830-o%C3%8C%C2%88rnek-elbise.jpg",
       description: "Özel davetler için"
     },
     {
@@ -77,7 +77,7 @@ export default function CategoryPart() {
     }
   ]
 
-  return (
+    return (
     <div className="bg-white">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         
@@ -95,7 +95,7 @@ export default function CategoryPart() {
               </svg>
             </LocalizedClientLink>
           </div>
-          
+  
           {/* Horizontal Scroll Container */}
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex space-x-4 pb-2">
@@ -111,19 +111,19 @@ export default function CategoryPart() {
                          src={dress.image}
                          alt={dress.name}
                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                       />
+              />
                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                        <div className="absolute bottom-4 left-4 right-4 text-white">
                          <h3 className="font-semibold text-lg leading-tight">{dress.name}</h3>
                          <p className="text-sm text-white/90 mt-1">{dress.description}</p>
-                       </div>
-                     </div>
-                   </div>
+                </div>
+              </div>
+            </div>
                 </LocalizedClientLink>
               ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Koleksiyonlar */}
         <div>
@@ -154,14 +154,14 @@ export default function CategoryPart() {
                       src={collection.image}
                       alt={collection.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+              />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-60" />
                     <div className="absolute bottom-3 left-3 right-3 text-white">
                       <h3 className="font-semibold text-sm leading-tight mb-1">{collection.name}</h3>
                       <p className="text-xs text-white/90">{collection.description}</p>
-                    </div>
-                  </div>
                 </div>
+              </div>
+            </div>
               </LocalizedClientLink>
             ))}
           </div>
@@ -187,7 +187,7 @@ export default function CategoryPart() {
           display: none;
         }
       `}</style>
-    </div>
-  )
-}
+      </div>
+    )
+  }
   
