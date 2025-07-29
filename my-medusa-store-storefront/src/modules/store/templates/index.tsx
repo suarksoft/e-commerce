@@ -9,10 +9,12 @@ import PaginatedProducts from "./paginated-products"
 const StoreTemplate = ({
   sortBy,
   page,
+  searchQuery,
   countryCode,
 }: {
   sortBy?: SortOptions
   page?: string
+  searchQuery?: string
   countryCode: string
 }) => {
   const pageNumber = page ? parseInt(page) : 1
@@ -26,12 +28,15 @@ const StoreTemplate = ({
       <RefinementList sortBy={sort} />
       <div className="w-full">
         <div className="mb-8 text-2xl-semi">
-          <h1 data-testid="store-page-title">Tüm ürünler</h1>
+          <h1 data-testid="store-page-title">
+            {searchQuery ? "Ürün arama özelliği çok yakında!" : "Tüm ürünler"}
+          </h1>
         </div>
         <Suspense fallback={<SkeletonProductGrid />}>
           <PaginatedProducts
             sortBy={sort}
             page={pageNumber}
+            searchQuery={searchQuery}
             countryCode={countryCode}
           />
         </Suspense>

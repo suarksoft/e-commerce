@@ -5,6 +5,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, ChevronDown, Star, TrendingU
 import { Button } from "@medusajs/ui"
 import { Input } from "@medusajs/ui"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { retrieveCart } from "@lib/data/cart"
 import { getFavorites } from "@lib/data/favorites"
 import { HttpTypes } from "@medusajs/types"
@@ -57,13 +58,16 @@ const categories = [
 
 
 const searchSuggestions = [
-  { text: "elbise", icon: TrendingUp, type: "trend" },
-  { text: "jean pantolon", icon: Star, type: "popular" },
-  { text: "blazer ceket", icon: TrendingUp, type: "trend" },
-  { text: "ayakkabı", icon: Star, type: "popular" },
+  { text: "elbise", icon: TrendingUp, type: "trend", href: "/elbise" },
+  { text: "jean pantolon", icon: Star, type: "popular", href: "/alt-giyim" },
+  { text: "blazer ceket", icon: TrendingUp, type: "trend", href: "/dis-giyim" },
+  { text: "ayakkabı", icon: Star, type: "popular", href: "/aksesuar" },
+  { text: "yeni gelenler", icon: TrendingUp, type: "trend", href: "/yeni-gelenler" },
+  { text: "fırsat ürünleri", icon: Star, type: "popular", href: "/firsat-urunleri" },
 ]
 
 export default function EnhancedNavbar() {
+  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -78,6 +82,78 @@ export default function EnhancedNavbar() {
   
   // Sepet verilerini al
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
+
+  // Arama fonksiyonu
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return
+    
+    // Önce önerilerde ara
+    const suggestionMatch = searchSuggestions.find(suggestion => 
+      suggestion.text.toLowerCase() === query.toLowerCase()
+    )
+    
+    if (suggestionMatch) {
+      router.push(suggestionMatch.href)
+      setSearchQuery("")
+      setIsSearchFocused(false)
+      return
+    }
+    
+    // Önerilerde bulunamazsa kategorilerde ara
+    const categoryMatch = categories.find(cat => 
+      cat.name.toLowerCase().includes(query.toLowerCase()) ||
+      cat.subcategories.some(sub => sub.toLowerCase().includes(query.toLowerCase()))
+    )
+    
+    if (categoryMatch) {
+      router.push(categoryMatch.href)
+      setSearchQuery("")
+      setIsSearchFocused(false)
+      return
+    }
+    
+    // Kategori bulunamazsa uyarı göster
+    showSearchNotification()
+    setSearchQuery("")
+    setIsSearchFocused(false)
+  }
+
+  // Arama uyarısı gösterme fonksiyonu
+  const showSearchNotification = () => {
+    // Mevcut uyarıyı temizle
+    const existingNotification = document.getElementById('search-notification')
+    if (existingNotification) {
+      existingNotification.remove()
+    }
+
+    // Yeni uyarı oluştur
+    const notification = document.createElement('div')
+    notification.id = 'search-notification'
+    notification.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-pink-500 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-top-2 duration-300'
+    notification.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="font-medium">Ürün arama özelliği çok yakında sizlerle!</span>
+      </div>
+    `
+
+    // Uyarıyı sayfaya ekle
+    document.body.appendChild(notification)
+
+    // 5 saniye sonra kaldır
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.classList.add('animate-out', 'slide-out-to-top-2', 'duration-300')
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove()
+          }
+        }, 300)
+      }
+    }, 5000)
+  }
 
   // Scroll effect
   useEffect(() => {
@@ -199,6 +275,10 @@ export default function EnhancedNavbar() {
               {/* Search Bar */}
               <div className="hidden flex-1 max-w-lg mx-8 md:block" ref={searchRef}>
                 <div className="relative">
+                  {/* Overlay for search suggestions */}
+                  {isSearchFocused && (
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSearchFocused(false)} />
+                  )}
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 z-10" />
                   <Input
                     type="text"
@@ -206,12 +286,17 @@ export default function EnhancedNavbar() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch(searchQuery)
+                      }
+                    }}
                     className="pl-12 pr-4 py-3 w-full rounded-full border-gray-200 focus:border-pink-300 focus:ring-pink-200 transition-all duration-300 hover:border-pink-200 shadow-sm hover:shadow-md"
                   />
 
                   {/* Search Suggestions */}
                   {isSearchFocused && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 animate-in slide-in-from-top-2 duration-200 z-50 backdrop-blur-sm">
                       {searchQuery === "" ? (
                         <>
                           <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -220,10 +305,9 @@ export default function EnhancedNavbar() {
                           {searchSuggestions.map((suggestion, index) => (
                             <button
                               key={index}
-                              className="w-full px-4 py-2 text-left hover:bg-pink-50 flex items-center space-x-3 transition-colors"
+                              className="w-full px-4 py-2 text-left hover:bg-pink-50 flex items-center space-x-3 transition-colors relative z-10"
                               onClick={() => {
-                                setSearchQuery(suggestion.text)
-                                setIsSearchFocused(false)
+                                handleSearch(suggestion.text)
                               }}
                             >
                               <suggestion.icon className="h-4 w-4 text-pink-500" />
@@ -397,6 +481,14 @@ export default function EnhancedNavbar() {
                 <Input
                   type="text"
                   placeholder="Ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch(searchQuery)
+                      setIsMenuOpen(false)
+                    }
+                  }}
                   className="pl-10 pr-4 py-2 w-full rounded-full border-gray-200 focus:border-pink-300 focus:ring-pink-200"
                 />
               </div>
